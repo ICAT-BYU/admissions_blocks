@@ -392,8 +392,8 @@ function admissions_blocks_waterfall_block() {
     $tmp->execute();
     $view = $tmp->result;
     
-    $var = print_r($view,true);
-    file_put_contents("/var/www/html/sites/admissions.byu.edu/modules/custom/admissions_blocks/view.txt",$var);
+    //$var = print_r($view,true);
+    //file_put_contents("/var/www/html/sites/admissions.byu.edu/modules/custom/admissions_blocks/view.txt",$var);
     
     $output = "<div class='waterfall view view-section'><div class='view-content' data-width='300'>";
     foreach($view as $nodeInfo) {
@@ -505,9 +505,9 @@ function admissions_blocks_waterfall_block() {
         // INSERT REBUILT VIEW
         $jScript.= " $('" .$output. "').insertAfter('#main-content'); ";
         // RUN WATERFALL
-        $jScript.= " var wf = $('.view-content').waterfall(); ";
+        $jScript.= " $(window).load(function() { var wf = $('.view-content').waterfall(); }); ";
         // ADJUST WHITESPACE
-        $jScript.= " function rePadWaterfall() { myPad = Math.floor($(window).width() * 0.03); if(myPad>30){myPad=30;} if(myPad<10){myPad=10;} $('.waterfall-item-content').css({'padding': myPad + 'px'}); } ";
+        $jScript.= " function rePadWaterfall() { myPad = Math.floor($(window).width() * 0.03); if(myPad>30){myPad=30;} if(myPad<18){myPad=18;} $('.waterfall-item-content').css({'padding': myPad + 'px'}); } ";
         $jScript.= " rePadWaterfall(); ";
         $jScript.= " $( window ).resize(function() { rePadWaterfall(); }); ";
         
