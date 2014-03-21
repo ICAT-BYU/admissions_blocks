@@ -1,0 +1,399 @@
+.onestop-filter-option{
+  height:30px;
+  width:30px;
+  display:inline-block;
+}
+
+.onestop-view-filter-links{
+  float:right;
+}
+
+.onestop-view-filter-links .popular{
+  background-image:url('../images/popular.png');
+  background-position:center center;
+  background-repeat:no-repeat;
+  opacity:.8;
+}
+
+.onestop-view-filter-links .popular:hover{
+  opacity:1;
+}
+.onestop-view-filter-links .alphabetical{
+  background-image:url('../images/alphabetical.png');
+  background-position:center center;
+  background-repeat:no-repeat;
+  opacity:.8;
+}
+.onestop-view-filter-links .alphabetical:hover{
+opacity:1;
+}
+.onestop-view-filter-links .important{
+  background-image:url('../images/important.png');
+  background-position:center center;
+  background-repeat:no-repeat;
+  opacity:.6;
+}
+.onestop-view-filter-links .important:hover{
+  opacity:.8;
+}
+
+/* OneStop Menu */
+
+.onestop-menu{
+  list-style:none;
+  padding:0px;
+  margin:0px;
+}
+
+.onestop-menu li{
+  display:inline;
+  float:left;
+}
+
+.onestop-menu-link{
+  display:inline-block;
+  width:150px;
+  height:150px;
+  background-color:#777777;
+  margin-right:10px;
+  background: #999999; /* Old browsers */
+  background: -moz-linear-gradient(top,  #999999 20%, #555544 100%); /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(20%,#999999), color-stop(100%,#555544)); /* Chrome,Safari4+ */
+  background: -webkit-linear-gradient(top,  #999999 20%,#555544 100%); /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(top,  #999999 20%,#555544 100%); /* Opera 11.10+ */
+  background: -ms-linear-gradient(top,  #999999 20%,#555544 100%); /* IE10+ */
+  background: linear-gradient(to bottom,  #999999 20%,#555544 100%); /* W3C */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#999999', endColorstr='#555544',GradientType=0 ); /* IE6-9 */
+
+}
+
+.onestop-menu a.last{
+  margin:0px;
+}
+
+.onestop-menu div{
+  color:white;
+  font-size:16px;
+  text-align:center;
+  font-weight:bold;
+  font-family:sans-serif;
+  width:150px;
+  height:40px;
+  letter-spacing:1px;
+}
+
+.menu-img{
+  margin-left:0px;
+  width:150px;
+  height:110px;
+  display:block;
+  background-repeat:no-repeat;
+  background-position:center center;
+}
+
+.tasks-img{
+  width:80px;
+  height:81px;
+  background:url(../images/menu_image.png) 0 0;
+}
+
+.tasks-link:hover{
+  background:#1e2353;
+  opacity:.9;
+}
+
+.tasks-link.active{
+  background:#1e2353;
+}
+
+.checklists-img{
+  background-image:url(../images/checklists.png);
+  background-size: 57px 70px;
+}
+
+.checklists-link:hover{
+  background:#96b13c;
+  opacity:.9;
+}
+.checklists-link.active{
+  background:#96b13c;
+}
+
+.offices-img{
+  background-image:url(../images/offices.png);
+  background-size: 53px 78px;
+}
+
+.offices-link:hover{
+  background:#90bde5;
+  opacity:.9;
+}
+.offices-link.active{
+  background:#90bde5;
+}
+
+.calendar-img{
+  background-image:url(../images/calendar.png);
+  background-size: 77px 55px;
+}
+
+.calendar-link:hover{
+  background:#545744;
+  opacity:.9;
+}
+.calendar-link.active{
+  background:#545744;
+
+}
+
+
+.myonestop-img{
+  background-image:url(../images/myonestop.png);
+  background-size: 48px 70px;
+}
+
+.myonestop-link:hover{
+  background:#ce3b27;
+  opacity:.9;
+}
+.myonestop-link.active{
+  background:#ce3b27;
+}
+
+.myonestop-text .italic{
+  font-style:italic;
+}
+
+/* Sub Menu Filter */
+
+.onestop-submenu-filter{
+  list-style:none;
+  padding-left:0px;
+  margin:0px;
+  height:35px;
+}
+
+.myonestop-filter{
+  background-color:#ce3b27;
+
+}
+.content-review-filter{
+  background-color:#989a8d;
+}
+
+.myonestop-filter a{
+  color:#ec7b72;
+}
+.content-review-filter a{
+  color:#cccccc;
+}
+.onestop-submenu-filter li.active,
+.onestop-submenu-filter a:hover{
+  color:white;
+}
+
+.onestop-submenu-filter li{
+  display:table-cell;
+  float:left;
+  width:158px;
+  text-align:center;
+  vertical-align:middle;
+
+}
+
+.onestop-submenu-filter a{
+  display:table-cell;
+  width:158px;
+  height:35px;
+  vertical-align:middle;
+  font-weight:bold;
+  letter-spacing:1px;
+
+}
+
+/* OneStop Secondary Menu */
+.onestop-secondary-menu{
+  list-style:none;
+  padding-left:0px;
+  vertical-align:middle;
+  width:100%;
+  height:35px;
+  vertical-align:middle;
+  margin:0px;
+}
+
+.onestop-secondary-menu a{
+  color:inherit;
+  display:table-cell;
+  width:158px;
+  height:35px;
+  vertical-align:middle;
+  text-align:center;
+}
+
+.onestop-secondary-menu li{
+  display:table-cell;
+  width:158px;
+  height:35px;
+  text-align:center;
+  font-weight:bold;
+  font-size:16px;
+  text-transform:uppercase;
+  vertical-align:middle;
+  letter-spacing:1px;
+
+}
+
+.onestop-secondary-menu a:hover,
+.onestop-secondary-menu li.active{
+  color:white;
+}
+
+/* facebook comments section */
+
+.facebook-comments-count {
+border-top: solid #818181 1px;
+border-bottom: solid #818181 1px;
+line-height: 24px;
+margin-bottom: 20px;
+}
+
+/* myOneStop/Calendar Banner Block */
+.banner_icon{
+  height: 150px;
+  width: 150px;
+  margin-right: 8px;
+  background-position: center;
+  background-repeat: no-repeat;
+  float: left;
+}
+
+.calendar_icon{
+  background-image: url('../images/pencil.png');
+  background-color: #545744;
+   background-position: center;
+  background-repeat: no-repeat;
+}
+
+.calendar_image{
+  background-image: url('../images/Calendar2.png');
+
+}
+.my_onestop_icon{
+  background-image: url('../images/magnifying-glass.png');
+  background-color: #CE3B27;
+}
+.my_onestop_image{
+  background-image: url('../images/myOneStop2.png');
+}
+
+.banner_image{
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 150px;
+  width: 632px;
+  float: left;
+}
+
+
+
+.calendar_banner .page_title_bar{
+  background-color: white;
+  opacity: .7;
+  width: 632px;
+  height: 35px;
+  margin-top: 80px;
+  margin-bottom: 15px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  color: #545744;
+}
+.my_onestop_banner .page_title_bar {
+  background-color: white;
+  opacity: .7;
+  width: 632px;
+  height: 59px;
+  margin-top: 60px;
+  margin-bottom: 15px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  color: #545744;
+  line-height:normal;
+}
+.page_title{
+  margin-left: 160px;
+  text-align: center;
+  font-size: 28px;
+  font-weight: bold;
+}
+.page_sub_title {
+  margin-left: 160px;
+  text-align: center;
+  font-style: italic;
+  font-size: 24px;
+  font-weight: bold;
+  text-transform:capitalize;
+}
+
+.my_onestop_banner .italic{
+  font-style:italic;
+}
+
+/* Footer block styles */
+#footer-columns{
+  color:white;
+}
+.twitter-icon{
+  background-image: url('../images/twitter.png');
+}
+.gplus-icon{
+  background-image:url('../images/gplus.png');
+}
+.facebook-icon{
+  background-image:url('../images/facebook.png');
+}
+.footer-icon{
+  background-position:center;
+  background-repeat:no-repeat;
+  background-size: 18px 18px;
+  width:18px;
+  height:18px;
+  float:left;
+  margin-right:5px;
+  margin-top:2px;
+}
+
+a.footertext{
+  color:white;
+  font-size:12px;
+}
+
+.contact_address{
+  font-size:12px;
+  line-height:16px;
+}
+
+.contact_footer a{
+  color:white;
+  font-size:12px;
+}
+
+.footer-title{
+  font-weight:bold;
+  font-size:14px;
+  margin-top:0px;
+  margin-bottom:5px;
+}
+
+.region-footer-fourthcolumn a{
+  color:white;
+  font-size:14px;
+  font-weight:bold;
+}
+
+/* hide login/logout link on regular pages */
+
+.onestop-menu .login-logout{
+  display:none;
+  margin-left:10px;
+}

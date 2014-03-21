@@ -1,0 +1,5 @@
+name = Admissions Blocks
+description = A block module for creating custom blocks for the Admissions Website
+core = 7.x
+files[] = admissions_blocks.module
+stylesheets[all][] = css/admissions_blocks.css

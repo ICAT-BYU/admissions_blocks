@@ -1,0 +1,519 @@
+<?php
+/**
+ *  @file
+ *  A block module that builds custom blocks for the BYU Admissions Website
+ */
+ 
+/**
+ * Implements hook_help.
+ *
+ * Displays help and module information.
+ *
+ * @param path
+ *   Which path of the site we're using to display help
+ * @param arg
+ *   Array that holds the current path as returned from arg() function
+ */
+function admissions_blocks_help($path, $arg){
+  switch($path){
+    case "admin/help#admissions_blocks":
+      return '<p>' . t("Creates custom blocks for the BYU OneStop site here") . '</p>';
+      break;
+  }
+}
+
+function admissions_blocks_init(){
+    $module_path = drupal_get_path('module', 'admissions_blocks');
+    drupal_add_js(array("thisModule"=> array('modulePath' => $module_path)), "setting");
+    
+    // LIST AUDIENCES
+    $audienceTax = db_query("SELECT ttd.tid, ttd.name FROM taxonomy_term_data ttd JOIN taxonomy_vocabulary tv on ttd.vid = tv.vid WHERE tv.name = 'Audiences' ORDER BY ttd.weight");
+    $audHNames = "";
+    $audMNames = "";
+    $audIDs = "";
+    foreach($audienceTax as $one) {
+        $audHNames.= $one->name . ",";
+        $audMNames.= str_replace(" ", "-", strtolower($one->name)) . ",";
+        $audIDs.= $one->tid . ",";
+    }
+    $audHNames = trim($audHNames,",");
+    $audMNames = trim($audMNames,",");
+    $audIDs = trim($audIDs,",");
+    
+    define("AUDHNAMES",$audHNames);
+    define("AUDMNAMES",$audMNames);
+    define("AUDIDS",$audIDs);
+
+    // GET CURRENT AUDIENCE
+    $findAUDMN = explode(",", $audMNames);
+    $findAUDID = explode(",", $audIDs);
+    $qStr = $_SERVER['QUERY_STRING'];
+    $thisAud = $findAUDMN[0];
+    foreach($findAUDMN as $target) {
+        if (strpos($qStr, $target) === 0) {
+            $thisAud = $target;
+        }
+    }
+    $thisAudID = $findAUDID[array_search($thisAud, $findAUDMN)];
+    drupal_add_js( array( "admissions_blocks" => array('CurrentAudience' => $thisAud) ), 'setting');
+
+    define("CURRAUD",$thisAud);
+    define("CURRAUDID",$thisAudID);
+    
+    $taxNodes = db_query("SELECT entity_id, bundle FROM field_data_field_audience WHERE field_audience_tid = :audience ORDER BY entity_id", array(":audience" => $thisAudID));
+    $nodeTList = "";
+    $nodeMList = "";
+    foreach($taxNodes as $nid) {
+        if ($nid->bundle == "content_text") {
+            $nodeTList .= $nid->entity_id . ",";
+        } else if (($nid->bundle == "content_image")||($nid->bundle == "content_video")) {
+            $nodeMList .= $nid->entity_id . ",";       
+        }
+    }
+    $nodeTList = trim($nodeTList,",");
+    $nodeMList = trim($nodeMList,",");
+    define("NODETLIST",$nodeTList);
+    define("NODEMLIST",$nodeMList);
+}
+
+function getCurrentURL() {
+    $currentURL = (@$_SERVER["HTTPS"] == "on") ? "https://" : "http://";
+    $currentURL .= $_SERVER["SERVER_NAME"];
+    $currentURL .= $_SERVER["REQUEST_URI"];
+    return $currentURL;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function admissions_blocks_block_info(){
+  $blocks['admissions_left_sidebar'] = array(
+    'info' => t("Admissions Left Sidebar"),
+    'cache' => DRUPAL_CACHE_PER_PAGE,
+  );
+  $blocks['admissions_node_image'] = array(
+    'info' => t("Admissions Node Image"),
+    'cache' => DRUPAL_CACHE_PER_PAGE,
+  );
+  $blocks['admissions_facebook_block'] = array(
+    'info' => t("Admissions Facebook Comments Block"),
+    'cache' => DRUPAL_CACHE_PER_PAGE,
+  );
+  $blocks['admissions_related_links_block'] = array(
+    'info' => t("Admissions Related Links Block"),
+    'cache' => DRUPAL_CACHE_PER_PAGE,
+  );
+  $blocks['admissions_related_sites_block'] = array(
+    'info' => t("Admissions Related Sites Block"),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  $blocks['admissions_audience_block'] = array(
+    'info' => t("Admissions Select an Audience"),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  $blocks['admissions_waterfall_block'] = array(
+    'info' => t("Admissions Waterfall Block"),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  $blocks['admissions_taxonomy_target'] = array(
+    'info' => t("Admissions Taxonomy Target"),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  $blocks['admissions_search_slider_block'] = array(
+    'info' => t("Admissions Search Slider Block"),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  
+  return $blocks;
+}
+
+/**
+ *  Implements hook_block_view().
+ */
+
+function admissions_blocks_block_view($block_name = ""){
+  switch ($block_name){
+    case 'admissions_left_sidebar':
+      $block['subject'] = t('Admissions Left Sidebar');
+      $block['content'] = admissions_blocks_admissions_left_sidebar();
+      return $block;
+    case 'admissions_node_image':
+      $block['subject'] = t('Admissions Node Image');
+      $block['content'] = admissions_blocks_admissions_node_image();
+      return $block;
+    case 'admissions_facebook_block':
+      $block['subject'] = t("Admissions Facebook Comments Block");
+      $block['content'] = admissions_blocks_facebook_block();
+      return $block;
+    case 'admissions_related_links_block':
+      $block['subject'] = t("Admissions Related Links Block");
+      $block['content'] = admissions_blocks_related_links_block();
+      return $block;
+    case 'admissions_related_sites_block':
+      $block['subject'] = t("Admissions Related Sites Block");
+      $block['content'] = admissions_blocks_related_sites_block();
+      return $block;
+    case 'admissions_audience_block':
+      $block['subject'] = t("Admissions Select an Audience");
+      $block['content'] = admissions_blocks_audience_block();
+      return $block;
+    case 'admissions_waterfall_block':
+      $block['subject'] = t("Admissions Waterfall Block");
+      $block['content'] = admissions_blocks_waterfall_block();
+      return $block;
+    case 'admissions_taxonomy_target':
+      $block['subject'] = t("Admissions Taxonomy Target");
+      $block['content'] = admissions_blocks_taxonomy_target();
+      return $block;
+    case 'admissions_search_slider_block':
+      $block['subject'] = t("Admissions Search Slider Block");
+      $block['content'] = admissions_blocks_search_slider();
+      return $block;
+  }
+  
+}
+
+function admissions_blocks_search_slider() {
+    drupal_add_css('.search-region {overflow:hidden;}','inline');
+    drupal_add_css('.container-inline {position:relative;z-index:100;}','inline');
+    drupal_add_css('#fake-search {position:relative;top:-25px;left:183px;z-index:200;height:25px;}','inline');
+    $js = "(function ($) { jQuery(document).ready(function($) { ";
+    
+    $js.= " $('.header .container-inline').css({ 'left':'250px' }); ";
+    $js.= " $('.header .container-inline #edit-submit').css({ 'position':'relative','z-index':'1' }); ";
+    $js.= " $('.header .container-inline').after('<img id=\"fake-search\"  src=\"/sites/financialaid.byu.edu/modules/custom/financialaid_blocks/images/fakesearch.png\" />'); ";
+    $js.= " $('#fake-search').click( function() { $('.container-inline').animate({ left: '0px' },400, function(){ $('#fake-search').remove(); $('#edit-search-block-form--2').focus();} );  }); ";
+
+    /*$js.= " $('#edit-search-block-form--2').blur( function() { if($('#edit-search-block-form--2').val() == 'Search') { 
+$('#fake-search').css({'z-index':'100'});    $('.header .container-inline').delay(300).animate({ left: '250px' },800 ); } else { $('#fake-search').css({'z-index':'100'});    $('.header .container-inline').delay(3000).animate({ left: '250px' },400 ); } }); ";*/
+    
+    $js.= " }); }(jQuery)); ";
+    drupal_add_js($js, 'inline');
+}
+
+function admissions_blocks_admissions_left_sidebar(){
+  $URL = explode('/',current_path());
+  global $base_url;
+  if($URL[0] === 'node'){ $node = node_load($URL[1]); }
+  
+  if(isset($node->field_icon['und'][0]['target_id'])){
+    $icon_node = node_load($node->field_icon['und'][0]['target_id']);
+    $icon_node_view = node_view($icon_node, $view_mode = 'full');
+  }
+  if(isset($node->field_do_it_link['und'][0]['url'])){
+    $link_url = $node->field_do_it_link['und'][0]['url'];
+  }
+  $icon = '<div class="node-block-icon">'.drupal_render($icon_node_view).'</div>';
+  if(isset($link_url)){
+    $link = '<div class="do-it-link-div"><a href="'.$link_url.'" class="do-it-link">Do it</a></div>';
+  } else {
+    $link = '';
+  }
+  $output = '<div class="page-left-sidebar"><div class="heightfix"></div>'.$icon.'</div><div class="sidebar-links clearfix">'.$link.'</div>';
+  return $output;
+}
+
+// ===================================================== DONT ADD IMAGES NOT RELATED TO CURRENT AUDIENCE ===============================================
+function admissions_blocks_admissions_node_image(){
+    $URL = explode('/',current_path());
+    if($URL[0] === 'node'){ $node = node_load($URL[1]); }
+
+    // Loop through Images and Videos - set up XSlider
+    $module_path = drupal_get_path('module', 'admissions_blocks');
+    $output = '<script src="https://www.youtube.com/iframe_api"></script>';
+    $output.= '<link href="/' . $module_path . '/XSlider/anythingslider.css" rel="stylesheet">'; 
+    $output.= '<script src="/' . $module_path . '/XSlider/jquery.anythingslider.min.js"></script>'; 
+    $output.= '<script src="/' . $module_path . '/XSlider/XSlider.js"></script>'; 
+    $noImageImg = '<img src="/' . $module_path . '/images/no-image.jpg">'; 
+    $nodeArray = explode(",",NODEMLIST);
+    
+    $sliderOutput = '<ul id="imageSlider">';
+    $numberOutput = 0;
+    if (isset($node->field_page_cover['und'])) {
+        foreach($node->field_page_cover['und'] as $slideNodeID) {
+            if (in_array($slideNodeID['target_id'], $nodeArray)) {
+                $slideNode = node_load($slideNodeID['target_id']);
+                if (isset($slideNode->type)) {
+                    if (isset($slideNode->field_display_title['und'][0]['value'])) {
+                        $caption = '<div class="caption-bottom">' . $slideNode->field_display_title['und'][0]['value'] . '</div>';
+                    } else {
+                        $caption = '';
+                    }
+                    if ($slideNode->type == "content_video") {
+                        $vidID = $slideNode->field_youtube_video['und'][0]['video_id'];
+                        $res = get_highest_quality($vidID);
+                        $sliderOutput.= '<li><img id="youtube-slide:' .$vidID. '" src="https://i.ytimg.com/vi/' .$vidID. '/' .$res. '.jpg">' .$caption. '</li>';
+                        $numberOutput++;
+                    } else if ($slideNode->type == "content_image") {
+                        $imgURI = $slideNode->field_image['und'][0]['uri'];
+                        $imgURL = file_create_url($imgURI);
+                        $sliderOutput.= '<li><img src="' .$imgURL. '" alt="">' .$caption. '</li>';
+                        $numberOutput++;
+                    }
+                }
+            }  
+        }
+    }
+    if ($numberOutput == 0) { $sliderOutput.= '<li>'. $noImageImg .'<div class="caption-bottom">You are lost</div></li>'; }
+    
+    $sliderOutput.= '</ul>';
+    
+    $output.= '<div id="XSliderContainer" style="width:100%;">' .$sliderOutput. '</div>';
+    return $output;
+}
+
+function get_highest_quality($vidID) {
+
+    // Does MAXRES Exist
+    $maxUrl = "http://i.ytimg.com/vi/".$vidID."/maxresdefault.jpg";
+    $maxHead = get_headers($maxUrl);
+    if (strpos($maxHead[0], "200 OK") !== false) return "maxresdefault";
+    
+    // Find Best Available RES
+    $resolutions = array("sddefault", "hqdefault", "mqdefault");
+    $json = file_get_contents("http://gdata.youtube.com/feeds/api/videos/". $vidID ."?v=2&alt=json");
+    foreach($resolutions as $res) {
+        if ( strpos($json, $res) !== false ) return $res;
+    }
+    
+    // Use DEFAULT RES
+    return "default";
+}
+
+
+function admissions_blocks_facebook_block(){
+
+  global $base_url;
+  $current_path = current_path();
+	
+  $output = '<div class="fb-comments" data-href="'.$base_url .  '/' . $current_path . '" data-width="630" data-num-posts="10"></div>';
+
+  return $output;
+}
+
+function admissions_blocks_related_links_block(){
+  $URL = explode('/',current_path());
+  global $base_url;
+  if($URL[0] === 'node'){ $node = node_load($URL[1]); }
+  //dsm($node);
+  
+  $output='<div class="related-links-title">Related Links</div>';
+  return $output;
+}
+
+function admissions_blocks_related_sites_block(){
+  $output = '<ul>';
+    $output .= '<li><span class="related-sites-img home"></span><a href="http://home.byu.edu/home">BYU.edu</a></li>';
+    $output .= '<li><span class="related-sites-img onestop"></span><a href="http://onestop.byu.edu">OneStop</a></li>';
+    $output .= '<li><span class="related-sites-img registrar"></span><a href="http://registrar.byu.edu">Registrar</a></li>';
+    $output .= '<li><span class="related-sites-img admissions"></span><a href="http://b4.byu.edu">Admissions</a></li>';
+  $output .= '</ul>';
+  return $output;
+}
+
+function admissions_blocks_audience_block(){
+/*
+    if (empty($_SERVER['QUERY_STRING'])) {
+        header("Location: " . getCurrentURL() . "?new-freshman");
+        exit();
+    } else {
+        $audiences = explode(",", AUDMNAMES);
+        $inQuery = false;
+        foreach($audiences as $target) {
+            if (isset($_GET[$target])) {
+                $inQuery = true;
+            }
+        }
+        if (!$inQuery) {
+            header("Location: " . str_replace("?", "?new-freshman&", getCurrentURL()));
+            exit();
+        }
+    }
+*/
+    $module_path = drupal_get_path('module', 'admissions_blocks');
+    drupal_add_js('/' . $module_path . '/js/admissions_blocks.js?' . urlencode(microtime()),'file');
+    $audnames = explode(",", AUDHNAMES);
+    drupal_add_css('.audience {color:blue;cursor:pointer;}','inline');
+    $output = '<ul>';
+    foreach($audnames as $target) {
+        $output .= '<li><div class="audience" onClick="changeAudience(\'' .str_replace(" ", "-", strtolower($target)). '\');">' .$target. '</div></li>';
+    }
+    $output .= '</ul>';
+    return $output;
+}
+
+// ===================================================== HIDE NODES NOT RELATED TO CURRENT AUDIENCE ===============================================
+function admissions_blocks_taxonomy_target() {
+
+    $thisAud = CURRAUD;
+    $thisAudID = CURRAUDID;
+    
+    $module_path = drupal_get_path('module', 'admissions_blocks');
+    $noTextImg = '<img src="/' . $module_path . '/images/no-text.jpg">'; 
+ 
+    $jScript = " (function ($) { jQuery(document).ready(function($) { ";
+    $jScript.= " showNodes = '" .NODETLIST. "'.split(','); ";
+    $jScript.= " numberOutput = 0; ";
+    
+    $jScript.= " var regExp = /nid-([0-9]+)/; ";
+    $jScript.= " $(\"div[class*='nid-']\").each(function(i, obj) { ";
+    $jScript.= "    var nid = regExp.exec($(this).attr('class')); ";
+    $jScript.= "    if (showNodes.indexOf(nid[1]) == -1) { $(this).css({'display':'none'}); } ";
+    $jScript.= "    else { numberOutput++; } ";
+    $jScript.= " }); ";
+    $jScript.= " if (numberOutput == 0) { $('.node-title').after('<div class=\"field\"><p><strong>These are not the droids you are looking for.</strong></p><p>" .$noTextImg. "</p><div>'); } ";
+    
+    
+    $jScript.= " }); }(jQuery)); ";
+    
+    drupal_add_js($jScript, 'inline');
+   
+}
+
+function admissions_blocks_waterfall_block() {
+
+    $thisAud = CURRAUD;
+    $thisAudID = CURRAUDID;
+    $nodeTArray = explode(",",NODETLIST);
+    $nodeMArray = explode(",",NODEMLIST);
+    
+    // GET VIEW ARGUEMENTS
+    $path = current_path();
+    $pageArray = explode("/",$path);
+    $viewArg = "";
+    if (isset($pageArray[1])) {
+        $viewArg = $pageArray[1];
+    }
+
+    // RUN VIEW
+    $tmp = views_get_view('section');
+    $tmp->set_display("page");
+    $tmp->set_arguments(array($viewArg));
+    $tmp->execute();
+    $view = $tmp->result;
+    
+    $var = print_r($view,true);
+    file_put_contents("/var/www/html/sites/admissions.byu.edu/modules/custom/admissions_blocks/view.txt",$var);
+    
+    $output = "<div class='waterfall view view-section'><div class='view-content' data-width='300'>";
+    foreach($view as $nodeInfo) {
+        $thisNid = $nodeInfo->nid;
+        $outputLNK = "";
+        $outputIMG = "";
+        $outputSVG = "";
+        $outputTXT = "";
+        $outputTTL = "";
+        $outputBIG = "1";
+        $outputTAX = "";
+        
+        $thisNode = node_load($thisNid);
+        
+        // LINK
+        $alias = db_query("SELECT alias FROM url_alias WHERE source = :source limit 1", array(":source" => "node/". $thisNid))->fetchField();
+        $outputLNK = "/" . $alias;
+        
+        // TILE SIZE
+        if (isset($thisNode->field_size["und"][0]["value"])) {
+            $outputBIG = $thisNode->field_size["und"][0]["value"];
+        }
+        
+        // TAXONOMY CATEGORY
+        if (isset($thisNode->field_page_category['und'][0]['tid'])) {
+            $outputTAX = $thisNode->field_page_category['und'][0]['tid'];
+        }
+        
+        // SVG ICON URL
+        if (isset($thisNode->field_page_icon['und'][0]['target_id'])) {
+            $iconNode = node_load($thisNode->field_page_icon['und'][0]['target_id']);
+            if (isset($iconNode->field_svg_icon['und'][0]['uri'])) {
+                $thisUri = $iconNode->field_svg_icon['und'][0]['uri'];
+                $thisUrl = file_create_url($thisUri);
+                $outputSVG = $thisUrl;
+            }
+        }
+        
+        // TITLE AND TEXT SUMMARY
+        if (isset($thisNode->field_content['und'][0])) {
+            foreach($thisNode->field_content['und'] as $content) {
+                $contentNodeID = $content["target_id"];
+                if (in_array($contentNodeID, $nodeTArray)) {
+                    $contentNode = node_load($contentNodeID);
+                    $outputTTL = $contentNode->title;
+                    $markup =  $contentNode->body['und'][0]['value'];
+
+                    // REMOVE TABLES
+                    $pattern = '%<table\b[^>]*+>(?:(?R)|[^<]*+(?:(?!</?table\b)<[^<]*+)*+)*+</table>%i';
+                    $replace = ' ';
+                    $markup = preg_replace($pattern, $replace, $markup);
+
+                    // TAKE SAMPLE OF REMAINING
+                    $alter['html'] = true;
+                    $alter['word_boundary'] = true;
+                    $alter['ellipsis'] = true;
+                    $alter['max_length'] = 337;
+                    $outputTXT = views_trim_text($alter, $markup);                
+                    break;
+                }
+            }
+        }
+ 
+        // IMAGE or YOUTUBE THUMBNAIL
+        if (isset($thisNode->field_page_cover['und'][0])) {
+            foreach($thisNode->field_page_cover['und'] as $media) {
+                $mediaNodeID = $media["target_id"];
+                if (in_array($mediaNodeID, $nodeMArray)) {
+                    $mediaNode = node_load($mediaNodeID);
+                    // IMAGE 
+                    if (isset($mediaNode->field_image["und"][0]["uri"])) {
+                        $imgURI = $mediaNode->field_image["und"][0]["uri"];
+                        $outputIMG = file_create_url($imgURI);
+                    }
+                    // VIDEO
+                    if (isset($mediaNode->field_youtube_video["und"][0]["video_id"])) {
+                        $vidID = $mediaNode->field_youtube_video["und"][0]["video_id"];
+                        $res = get_highest_quality($vidID);
+                        $outputIMG = "https://i.ytimg.com/vi/" .$vidID. "/" .$res. ".jpg";
+
+                    }
+                    break;
+                }
+            }
+        }
+        if (($outputIMG != "") && ($outputTXT != "")) {
+            $output .= "<div class='item views-row' data-span='" .$outputBIG. "'>";
+            $output .= "<div class='waterfall-item-container'>";
+            $output .= "<div class='waterfall-item-image views-field views-field-field-youtube-video views-field-field-image'><a href='" .$outputLNK. "'><img src='" .$outputIMG. "'></a></div>";
+            $output .= "<div class='waterfall-item-content'>";
+            $output .= "<div class='waterfall-item-icon views-field views-field-field-icon taxonomy-".$outputTAX."'><a href='" .$outputLNK. "'><img src='" .$outputSVG. "'></a></div>";
+            $output .= "<div class='waterfall-item-title views-field views-field-title'><span><a href='" .$outputLNK. "'>" .$outputTTL. "</a></span></div>";
+            $output .= "<div class='waterfall-item-body views-field views-field-body'><span>" .$outputTXT. "</span></div>";
+            $output .= "</div></div></div>";
+        }
+    }
+    $output .= "</div></div>";
+
+    // remove non printable characters from output
+    $output = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $output);
+    
+    // escape single quotes
+    $output = str_replace("'", "\'", $output);
+    
+    // ================================= ADD JAVASCRIPT =========================================
+    $jScript = " (function ($) { jQuery(document).ready(function($) { ";
+        // HIDE CURRENT VIEW
+        $jScript.= " $('.view').remove(); ";
+        // INSERT REBUILT VIEW
+        $jScript.= " $('" .$output. "').insertAfter('#main-content'); ";
+        // RUN WATERFALL
+        $jScript.= " var wf = $('.view-content').waterfall(); ";
+        // ADJUST WHITESPACE
+        $jScript.= " function rePadWaterfall() { myPad = Math.floor($(window).width() * 0.03); if(myPad>30){myPad=30;} if(myPad<10){myPad=10;} $('.waterfall-item-content').css({'padding': myPad + 'px'}); } ";
+        $jScript.= " rePadWaterfall(); ";
+        $jScript.= " $( window ).resize(function() { rePadWaterfall(); }); ";
+        
+    $jScript.= " }); }(jQuery)); ";
+    
+    drupal_add_js($jScript, 'inline');
+ 
+}
+
