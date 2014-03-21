@@ -395,7 +395,7 @@ function admissions_blocks_waterfall_block() {
     //$var = print_r($view,true);
     //file_put_contents("/var/www/html/sites/admissions.byu.edu/modules/custom/admissions_blocks/view.txt",$var);
     
-    $output = "<div class='waterfall view view-section'><div class='view-content' data-width='300'>";
+    $waterfallTiles = Array();
     foreach($view as $nodeInfo) {
         $thisNid = $nodeInfo->nid;
         $outputLNK = "";
@@ -408,6 +408,9 @@ function admissions_blocks_waterfall_block() {
         
         $thisNode = node_load($thisNid);
         
+        // TITLE
+        $outputTTL = $thisNode->title;
+
         // LINK
         $alias = db_query("SELECT alias FROM url_alias WHERE source = :source limit 1", array(":source" => "node/". $thisNid))->fetchField();
         $outputLNK = "/" . $alias;
@@ -432,19 +435,21 @@ function admissions_blocks_waterfall_block() {
             }
         }
         
-        // TITLE AND TEXT SUMMARY
+        // TEXT SUMMARY
         if (isset($thisNode->field_content['und'][0])) {
             foreach($thisNode->field_content['und'] as $content) {
                 $contentNodeID = $content["target_id"];
                 if (in_array($contentNodeID, $nodeTArray)) {
                     $contentNode = node_load($contentNodeID);
-                    $outputTTL = $contentNode->title;
                     $markup =  $contentNode->body['und'][0]['value'];
 
                     // REMOVE TABLES
                     $pattern = '%<table\b[^>]*+>(?:(?R)|[^<]*+(?:(?!</?table\b)<[^<]*+)*+)*+</table>%i';
                     $replace = ' ';
                     $markup = preg_replace($pattern, $replace, $markup);
+
+                    // REMOVE NON PRINTABLE CHARACTERS
+                    $markup = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $markup);
 
                     // TAKE SAMPLE OF REMAINING
                     $alter['html'] = true;
@@ -480,38 +485,44 @@ function admissions_blocks_waterfall_block() {
             }
         }
         if (($outputIMG != "") && ($outputTXT != "")) {
-            $output .= "<div class='item views-row' data-span='" .$outputBIG. "'>";
-            $output .= "<div class='waterfall-item-container'>";
-            $output .= "<div class='waterfall-item-image views-field views-field-field-youtube-video views-field-field-image'><a href='" .$outputLNK. "'><img src='" .$outputIMG. "'></a></div>";
-            $output .= "<div class='waterfall-item-content'>";
-            $output .= "<div class='waterfall-item-icon views-field views-field-field-icon taxonomy-".$outputTAX."'><a href='" .$outputLNK. "'><img src='" .$outputSVG. "'></a></div>";
-            $output .= "<div class='waterfall-item-title views-field views-field-title'><span><a href='" .$outputLNK. "'>" .$outputTTL. "</a></span></div>";
-            $output .= "<div class='waterfall-item-body views-field views-field-body'><span>" .$outputTXT. "</span></div>";
-            $output .= "</div></div></div>";
+            $waterfallTile = "";
+            $waterfallTile .= "<div class='item views-row' data-span='" .$outputBIG. "'>";
+            $waterfallTile .= "<div class='waterfall-item-container'>";
+            $waterfallTile .= "<div class='waterfall-item-image views-field views-field-field-youtube-video views-field-field-image'><a href='" .$outputLNK. "'><img src='" .$outputIMG. "'></a></div>";
+            $waterfallTile .= "<div class='waterfall-item-content'>";
+            $waterfallTile .= "<div class='waterfall-item-icon views-field views-field-field-icon taxonomy-".$outputTAX."'><a href='" .$outputLNK. "'><img src='" .$outputSVG. "'></a></div>";
+            $waterfallTile .= "<div class='waterfall-item-title views-field views-field-title'><span><a href='" .$outputLNK. "'>" .$outputTTL. "</a></span></div>";
+            $waterfallTile .= "<div class='waterfall-item-body views-field views-field-body'><span>" .$outputTXT. "</span></div>";
+            $waterfallTile .= "</div></div></div>";
+            // ESCAPE SINGLE QUOTES
+            $waterfallTile = str_replace("'", "\'", $waterfallTile);
+            $waterfallTiles[] = $waterfallTile;
         }
     }
-    $output .= "</div></div>";
+    
+    $wrapper = "<div class=\'waterfall view view-section\'><div id=\'waterfall-wrapper\' class=\'view-content\' data-width=\'300\'>";
+    $wrapper .= "</div></div>";
 
-    // remove non printable characters from output
-    $output = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $output);
-    
-    // escape single quotes
-    $output = str_replace("'", "\'", $output);
-    
     // ================================= ADD JAVASCRIPT =========================================
-    $jScript = " (function ($) { jQuery(document).ready(function($) { ";
+    $jScript = "\n\n (function ($) { jQuery(document).ready(function($) { ";
         // HIDE CURRENT VIEW
-        $jScript.= " $('.view').remove(); ";
-        // INSERT REBUILT VIEW
-        $jScript.= " $('" .$output. "').insertAfter('#main-content'); ";
-        // RUN WATERFALL
-        $jScript.= " $(window).load(function() { var wf = $('.view-content').waterfall(); }); ";
-        // ADJUST WHITESPACE
-        $jScript.= " function rePadWaterfall() { myPad = Math.floor($(window).width() * 0.03); if(myPad>30){myPad=30;} if(myPad<18){myPad=18;} $('.waterfall-item-content').css({'padding': myPad + 'px'}); } ";
-        $jScript.= " rePadWaterfall(); ";
-        $jScript.= " $( window ).resize(function() { rePadWaterfall(); }); ";
+        $jScript.= "\n\n $('.view').remove(); ";
         
-    $jScript.= " }); }(jQuery)); ";
+        // INSERT REBUILT VIEW
+        $jScript.= "\n\n $('" .$wrapper. "').insertAfter('#main-content'); ";
+        
+        // INSERT WATERFALL ITEMS
+        foreach($waterfallTiles as $tile) { $jScript.= "\n\n $('#waterfall-wrapper').append('" .$tile. "'); "; }
+        $jScript.= "\n\n $('.waterfall-item-image img').css({'width':'100%'}); ";
+        // RUN WATERFALL
+        
+        $jScript.= "\n\n $(window).load(function(){ $('.view-content').waterfall();  wfh = $('.view-content').height(); $('.waterfall').css({'min-height': wfh + 'px'}); }); ";
+       // ADJUST WHITESPACE
+        $jScript.= "\n\n function rePadWaterfall() { myPad = Math.floor($(window).width() * 0.03); if(myPad>30){myPad=30;} if(myPad<18){myPad=18;} $('.waterfall-item-content').css({'padding': myPad + 'px'}); } ";
+        $jScript.= "\n\n rePadWaterfall(); ";
+        $jScript.= "\n\n $( window ).resize(function() { rePadWaterfall(); }); ";
+        
+    $jScript.= "\n\n }); }(jQuery)); ";
     
     drupal_add_js($jScript, 'inline');
  
