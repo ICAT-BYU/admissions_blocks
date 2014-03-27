@@ -23,43 +23,41 @@ function admissions_blocks_help($path, $arg){
 }
 
 function admissions_blocks_init(){
-    $module_path = drupal_get_path('module', 'admissions_blocks');
-    drupal_add_js(array("thisModule"=> array('modulePath' => $module_path)), "setting");
-    
+  
     // LIST AUDIENCES
     $audienceTax = db_query("SELECT ttd.tid, ttd.name FROM taxonomy_term_data ttd JOIN taxonomy_vocabulary tv on ttd.vid = tv.vid WHERE tv.name = 'Audiences' ORDER BY ttd.weight");
-    $audHNames = "";
-    $audMNames = "";
+    $audNMs = "";
     $audIDs = "";
     foreach($audienceTax as $one) {
-        $audHNames.= $one->name . ",";
-        $audMNames.= str_replace(" ", "-", strtolower($one->name)) . ",";
+        $audNMs.= str_replace(" ", "-", strtolower($one->name)) . ",";
         $audIDs.= $one->tid . ",";
     }
-    $audHNames = trim($audHNames,",");
-    $audMNames = trim($audMNames,",");
-    $audIDs = trim($audIDs,",");
+    define("AUDIENCES", $audNMs);
     
-    define("AUDHNAMES",$audHNames);
-    define("AUDMNAMES",$audMNames);
-    define("AUDIDS",$audIDs);
-
     // GET CURRENT AUDIENCE
-    $findAUDMN = explode(",", $audMNames);
-    $findAUDID = explode(",", $audIDs);
-    $qStr = $_SERVER['QUERY_STRING'];
-    $thisAud = $findAUDMN[0];
-    foreach($findAUDMN as $target) {
-        if (strpos($qStr, $target) === 0) {
-            $thisAud = $target;
-        }
-    }
-    $thisAudID = $findAUDID[array_search($thisAud, $findAUDMN)];
-    drupal_add_js( array( "admissions_blocks" => array('CurrentAudience' => $thisAud) ), 'setting');
+    $audNMsArray = explode(",", $audNMs);
+    $audIDsArray = explode(",", $audIDs);
 
-    define("CURRAUD",$thisAud);
-    define("CURRAUDID",$thisAudID);
+// TESTING
+if ($_SERVER['HTTP_REFERER'] == "") {unset($_SESSION['audience']); }
+// TESTING
     
+    // session_start(); // SESSION ALREADY STARTED BY DRUPAL
+    if(isset($_SESSION['audience'])) {
+        $thisAudNM = $_SESSION['audience'];
+        $thisAudID = $audIDsArray[array_search($thisAudNM, $audNMsArray)];
+        $audSelected = 1;
+    } else {
+        $thisAudNM = $audNMsArray[0];
+        $thisAudID = $audIDsArray[0];
+        $_SESSION['audience']=$thisAudNM;
+        $audSelected = 0;
+    }
+
+    $module_path = drupal_get_path('module', 'admissions_blocks');
+    drupal_add_js('/' . $module_path . '/js/admissions_blocks.js?' . urlencode(microtime()),'file');
+    drupal_add_js(array("thisModule"=> array('modulePath' => $module_path, 'audID' => $thisAudID, 'audNM' => $thisAudNM, 'audSELECTED' => $audSelected )), "setting");
+     
     $taxNodes = db_query("SELECT entity_id, bundle FROM field_data_field_audience WHERE field_audience_tid = :audience ORDER BY entity_id", array(":audience" => $thisAudID));
     $nodeTList = "";
     $nodeMList = "";
@@ -76,12 +74,6 @@ function admissions_blocks_init(){
     define("NODEMLIST",$nodeMList);
 }
 
-function getCurrentURL() {
-    $currentURL = (@$_SERVER["HTTPS"] == "on") ? "https://" : "http://";
-    $currentURL .= $_SERVER["SERVER_NAME"];
-    $currentURL .= $_SERVER["REQUEST_URI"];
-    return $currentURL;
-}
 
 /**
  * Implements hook_block_info().
@@ -153,10 +145,6 @@ function admissions_blocks_block_view($block_name = ""){
       $block['subject'] = t("Admissions Related Sites Block");
       $block['content'] = admissions_blocks_related_sites_block();
       return $block;
-    case 'admissions_audience_block':
-      $block['subject'] = t("Admissions Select an Audience");
-      $block['content'] = admissions_blocks_audience_block();
-      return $block;
     case 'admissions_waterfall_block':
       $block['subject'] = t("Admissions Waterfall Block");
       $block['content'] = admissions_blocks_waterfall_block();
@@ -173,6 +161,35 @@ function admissions_blocks_block_view($block_name = ""){
   
 }
 
+/*
+ * 
+ * Implementation of hook_menu()
+ */
+function admissions_blocks_menu() {
+    $items['menu/ChangeAudience' ] = array(
+        'title' => 'Signage Event',
+        'page callback' => 'admissions_blocks_ChangeAudience',
+        'access arguments' => array('access content'),
+        'type' => MENU_CALLBACK
+    );
+    return $items;
+}
+
+/* ================================= CHANGE AUDIENCE =================================== */
+function admissions_blocks_ChangeAudience() {
+    $audArray = explode(",", AUDIENCES);
+    if(isset($_GET["audience"])) {
+        if (in_array($_GET["audience"],$audArray)) {
+            $_SESSION['audience']=$_GET["audience"];
+        } else {
+            $_SESSION['audience']=$audArray[0];
+        }
+    }
+    header('Location: ' . $_SERVER['HTTP_REFERER']);
+    exit();
+    
+}
+
 function admissions_blocks_search_slider() {
     drupal_add_css('.search-region {overflow:hidden;}','inline');
     drupal_add_css('.container-inline {position:relative;z-index:100;}','inline');
@@ -183,10 +200,7 @@ function admissions_blocks_search_slider() {
     $js.= " $('.header .container-inline #edit-submit').css({ 'position':'relative','z-index':'1' }); ";
     $js.= " $('.header .container-inline').after('<img id=\"fake-search\"  src=\"/sites/financialaid.byu.edu/modules/custom/financialaid_blocks/images/fakesearch.png\" />'); ";
     $js.= " $('#fake-search').click( function() { $('.container-inline').animate({ left: '0px' },400, function(){ $('#fake-search').remove(); $('#edit-search-block-form--2').focus();} );  }); ";
-
-    /*$js.= " $('#edit-search-block-form--2').blur( function() { if($('#edit-search-block-form--2').val() == 'Search') { 
-$('#fake-search').css({'z-index':'100'});    $('.header .container-inline').delay(300).animate({ left: '250px' },800 ); } else { $('#fake-search').css({'z-index':'100'});    $('.header .container-inline').delay(3000).animate({ left: '250px' },400 ); } }); ";*/
-    
+   
     $js.= " }); }(jQuery)); ";
     drupal_add_js($js, 'inline');
 }
@@ -223,7 +237,7 @@ function admissions_blocks_admissions_node_image(){
     $output = '<script src="https://www.youtube.com/iframe_api"></script>';
     $output.= '<link href="/' . $module_path . '/XSlider/anythingslider.css" rel="stylesheet">'; 
     $output.= '<script src="/' . $module_path . '/XSlider/jquery.anythingslider.min.js"></script>'; 
-    $output.= '<script src="/' . $module_path . '/XSlider/XSlider.js"></script>'; 
+    $output.= '<script src="/' . $module_path . '/XSlider/XSlider.js?' . urlencode(microtime()) . '"></script>'; 
     $noImageImg = '<img src="/' . $module_path . '/images/no-image.jpg">'; 
     $nodeArray = explode(",",NODEMLIST);
     
@@ -311,42 +325,8 @@ function admissions_blocks_related_sites_block(){
   return $output;
 }
 
-function admissions_blocks_audience_block(){
-/*
-    if (empty($_SERVER['QUERY_STRING'])) {
-        header("Location: " . getCurrentURL() . "?new-freshman");
-        exit();
-    } else {
-        $audiences = explode(",", AUDMNAMES);
-        $inQuery = false;
-        foreach($audiences as $target) {
-            if (isset($_GET[$target])) {
-                $inQuery = true;
-            }
-        }
-        if (!$inQuery) {
-            header("Location: " . str_replace("?", "?new-freshman&", getCurrentURL()));
-            exit();
-        }
-    }
-*/
-    $module_path = drupal_get_path('module', 'admissions_blocks');
-    drupal_add_js('/' . $module_path . '/js/admissions_blocks.js?' . urlencode(microtime()),'file');
-    $audnames = explode(",", AUDHNAMES);
-    drupal_add_css('.audience {color:blue;cursor:pointer;}','inline');
-    $output = '<ul>';
-    foreach($audnames as $target) {
-        $output .= '<li><div class="audience" onClick="changeAudience(\'' .str_replace(" ", "-", strtolower($target)). '\');">' .$target. '</div></li>';
-    }
-    $output .= '</ul>';
-    return $output;
-}
-
 // ===================================================== HIDE NODES NOT RELATED TO CURRENT AUDIENCE ===============================================
 function admissions_blocks_taxonomy_target() {
-
-    $thisAud = CURRAUD;
-    $thisAudID = CURRAUDID;
     
     $module_path = drupal_get_path('module', 'admissions_blocks');
     $noTextImg = '<img src="/' . $module_path . '/images/no-text.jpg">'; 
@@ -372,8 +352,6 @@ function admissions_blocks_taxonomy_target() {
 
 function admissions_blocks_waterfall_block() {
 
-    $thisAud = CURRAUD;
-    $thisAudID = CURRAUDID;
     $nodeTArray = explode(",",NODETLIST);
     $nodeMArray = explode(",",NODEMLIST);
     

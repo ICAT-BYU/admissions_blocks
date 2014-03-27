@@ -37,7 +37,8 @@ jQuery(document).ready(function($) {
             // ============================ SWIPE =======================================
             var time = 1000, // allow movement if < 1000 ms (1 sec)
                 range = 50,  // swipe movement of 50 pixels triggers the slider
-                x = 0, t = 0, touch = "ontouchend" in document,
+                rangeY = 10,  // swipe movement of 10 pixels triggers the slider
+                x = 0, y = 0, t = 0, touch = "ontouchend" in document,
                 st = (touch) ? 'touchstart' : 'mousedown',
                 mv = (touch) ? 'touchmove' : 'mousemove',
                 en = (touch) ? 'touchend' : 'mouseup';
@@ -46,18 +47,29 @@ jQuery(document).ready(function($) {
                 .bind(st, function(e){
                     t = (new Date()).getTime();
                     x = e.originalEvent.touches ? e.originalEvent.touches[0].pageX : e.pageX;
+                    y = e.originalEvent.touches ? e.originalEvent.touches[0].pageY : e.pageY;
                 })
                 .bind(en, function(e){
-                    t = 0; x = 0;
+                    t = 0; x = 0; y = 0;
                 })
                 .bind(mv, function(e){
                     e.preventDefault();
-                    var newx = e.originalEvent.touches ? e.originalEvent.touches[0].pageX : e.pageX, r = (x === 0) ? 0 : Math.abs(newx - x),
-                    ct = (new Date()).getTime();
-                    if (t !== 0 && ct - t < time && r > range) {
-                        if (newx < x) { swipeSlide(1); }
-                        if (newx > x) { swipeSlide(-1); }
+                    var newx = e.originalEvent.touches ? e.originalEvent.touches[0].pageX : e.pageX, rx = (x === 0) ? 0 : Math.abs(newx - x), ct = (new Date()).getTime();
+                    var newy = e.originalEvent.touches ? e.originalEvent.touches[0].pageY : e.pageY, ry = (y === 0) ? 0 : Math.abs(newy - y), ct = (new Date()).getTime();
+                    if (t !== 0 && ct - t < time && rx > range) {
+                        if (newx < x) { swipeSlide(1); console.log("x", x, "newx", newx);}
+                        if (newx > x) { swipeSlide(-1); console.log("x", x, "newx", newx); }
                         t = 0; x = 0;
+                    }
+                    if (t !== 0 && ct - t < time && ry > rangeY && rx < ry) {
+                        if ( (ct-t) < 60 ) { $multiplier = 10; }
+                        else if ( (ct-t) < 90 ) { $multiplier = 5; }
+                        else if ( (ct-t) < 120 ) { $multiplier = 2; }
+                        else { $multiplier = 1; }
+                        $scrollY = $(window).scrollTop();
+                        $newScrollY = Math.floor($scrollY - ($multiplier*(newy - y))) + "px";
+                        $("body").animate({ "scrollTop": $newScrollY }, 500);
+                        t = 0; y = 0;
                     }
                 });        
             // ============================ SWIPE =======================================
